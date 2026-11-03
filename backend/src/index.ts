@@ -5,7 +5,7 @@ import { pool } from "./db";
 import authRoutes from "./routes/auth";
 import eventRoutes from "./routes/events";
 import serviceRoutes from "./routes/services";
-
+import bookingRoutes from "./routes/bookings";
 dotenv.config();
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET is missing in .env");
@@ -16,6 +16,7 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/events", eventRoutes);
 app.use("/services", serviceRoutes);
+app.use("/bookings", bookingRoutes);
 app.get("/health", async (req, res) => {
   
   try {
