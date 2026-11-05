@@ -1,25 +1,19 @@
 "use client";
-import { useEffect, useState } from "react";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
+
+// The home page just sends people to the right place
 export default function Home() {
-  const [backend, setBackend] = useState("loading...");
-  const [dbTime, setDbTime] = useState("");
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`)
-      .then((res) => res.json())
-      .then((data) => {
-        setBackend(data.status);
-        setDbTime(data.dbTime);
-      })
-      .catch(() => setBackend("backend not reachable"));
-  }, []);
+    if (loading) return;
+    if (!user) router.replace("/login");
+    else router.replace(user.role === "vendor" ? "/vendor" : "/dashboard");
+  }, [user, loading, router]);
 
-  return (
-    <main className="p-10">
-      <h1 className="text-2xl font-bold">Event Platform</h1>
-      <p className="mt-4">Backend status: {backend}</p>
-      <p>Database time: {dbTime}</p>
-    </main>
-  );
+  return <p className="p-8 text-gray-500">Loading...</p>;
 }
