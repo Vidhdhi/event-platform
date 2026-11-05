@@ -10,6 +10,7 @@ class EventInput(BaseModel):
     guest_count: int = Field(default=0, ge=0)
     category: Optional[str] = None          # only recommend this category
     category_budget: Optional[float] = Field(default=None, ge=0)  # overrides the default budget share
+    preferences: Optional[str] = None       # free text, e.g. "candid outdoor photos"
 
 
 class ServiceInput(BaseModel):
@@ -34,6 +35,7 @@ class ScoreBreakdown(BaseModel):
     budget: float
     location: float
     rating: float
+    text: float
 
 
 class Recommendation(BaseModel):

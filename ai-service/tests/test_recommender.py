@@ -1,4 +1,11 @@
-from recommender import budget_score, distance_km, rating_score, recommend
+from recommender import (
+    budget_score,
+    build_query,
+    distance_km,
+    rating_score,
+    recommend,
+    text_scores,
+)
 from schemas import EventInput, ServiceInput
 
 EVENT = EventInput(
@@ -84,3 +91,45 @@ def test_scores_are_between_0_and_100():
     services = [make_service(service_id=str(i), price=i * 50_000) for i in range(8)]
     for r in recommend(EVENT, services):
         assert 0 <= r.match_score <= 100
+
+
+def test_text_scores_prefer_relevant_description():
+    event = EventInput(
+        event_type="wedding",
+        city="Colombo",
+        total_budget=1_000_000,
+        category="Photography",
+        preferences="candid outdoor photos",
+    )
+    good = make_service(
+        service_id="good",
+        description="Candid outdoor wedding photography with natural light",
+    )
+    bad = make_service(
+        service_id="bad", description="Studio passport photos and ID pictures"
+    )
+    scores = text_scores(build_query(event), [good, bad])
+    assert scores[0] > scores[1]
+
+
+def test_text_scores_with_no_usable_words_does_not_crash():
+    s = make_service(title="the", category="of", description=None)
+    assert text_scores("and", [s]) == [0.0]
+
+
+def test_preferences_change_the_ranking():
+    event = EventInput(
+        event_type="wedding",
+        city="Colombo",
+        total_budget=1_500_000,
+        category="Photography",
+        preferences="drone aerial shots",
+    )
+    drone = make_service(
+        service_id="drone", description="Drone and aerial wedding photography"
+    )
+    plain = make_service(
+        service_id="plain", description="Traditional studio portraits"
+    )
+    result = recommend(event, [plain, drone])
+    assert result[0].service_id == "drone"

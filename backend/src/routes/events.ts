@@ -248,5 +248,136 @@ router.delete("/:id/budget-items/:itemId", async (req, res) => {
     res.status(500).json({ message: "Failed to delete budget item" });
   }
 });
+// ---------- AI recommendations ----------
 
+const recommendQuerySchema = z.object({
+  category: z.string().optional(),
+  preferences: z.string().max(500).optional(),
+  limit: z.coerce.number().int().min(1).max(30).default(10),
+});
+
+interface AiResponse {
+  count: number;
+  recommendations: Array<{
+    service_id: string;
+    match_score: number;
+    breakdown: Record<string, number>;
+    within_budget: boolean;
+    distance_km: number | null;
+    reasons: string[];
+  }>;
+  elapsed_ms: number;
+}
+
+// Calls the Python AI microservice
+async function callAiService(payload: unknown): Promise<AiResponse> {
+  const baseUrl = process.env.AI_SERVICE_URL || "http://localhost:8000";
+  const response = await fetch(`${baseUrl}/recommend`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok) {
+    throw new Error(`AI service returned ${response.status}`);
+  }
+  return (await response.json()) as AiResponse;
+}
+
+// GET /events/:id/recommendations?category=Photography&preferences=candid%20photos&limit=10
+router.get("/:id/recommendations", async (req, res) => {
+  const parsed = recommendQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ message: validationMessage(parsed.error) });
+    return;
+  }
+  const q = parsed.data;
+  const startedAt = Date.now();
+
+  try {
+    const event = await getOwnedEvent(req, res);
+    if (!event) return;
+
+    // 1. Load candidate services from the database
+    const params: unknown[] = [];
+    let categoryFilter = "";
+    if (q.category) {
+      params.push(q.category);
+      categoryFilter = "WHERE s.category = $1";
+    }
+
+    const candidates = await pool.query(
+      `SELECT s.service_id, s.title, s.description, s.category,
+              s.price::float8 AS price, s.currency, s.is_negotiable, s.city,
+              s.image_urls, v.business_name,
+              r.average_rating::float8 AS average_rating,
+              r.review_count::int AS review_count
+       FROM services s
+       JOIN vendors v ON v.vendor_id = s.vendor_id
+       JOIN service_ratings r ON r.service_id = s.service_id
+       ${categoryFilter}
+       LIMIT 500`,
+      params
+    );
+
+    if (candidates.rows.length === 0) {
+      res.json({ count: 0, recommendations: [], totalMs: Date.now() - startedAt });
+      return;
+    }
+
+    // 2. Ask the AI service to rank them
+    const payload = {
+      event: {
+        event_type: event.event_type,
+        city: event.city,
+        total_budget: Number(event.total_budget),
+        guest_count: event.guest_count,
+        category: q.category ?? null,
+        preferences: q.preferences ?? null,
+      },
+      services: candidates.rows.map((s) => ({
+        service_id: s.service_id,
+        title: s.title,
+        description: s.description,
+        category: s.category,
+        price: s.price,
+        city: s.city,
+        is_negotiable: s.is_negotiable,
+        average_rating: s.average_rating,
+        review_count: s.review_count,
+      })),
+      top_n: q.limit,
+    };
+
+    let ai: AiResponse;
+    try {
+      ai = await callAiService(payload);
+    } catch (err) {
+      console.error("AI service error:", err);
+      res.status(503).json({ message: "Recommendation service is unavailable" });
+      return;
+    }
+
+    // 3. Attach the service details to each ranked result
+    const byId = new Map(candidates.rows.map((s) => [s.service_id, s]));
+    const recommendations = ai.recommendations.map((r) => ({
+      ...byId.get(r.service_id),
+      match_score: r.match_score,
+      breakdown: r.breakdown,
+      within_budget: r.within_budget,
+      distance_km: r.distance_km,
+      reasons: r.reasons,
+    }));
+
+    res.json({
+      count: recommendations.length,
+      recommendations,
+      aiMs: ai.elapsed_ms,
+      totalMs: Date.now() - startedAt,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to generate recommendations" });
+  }
+});
 export default router;

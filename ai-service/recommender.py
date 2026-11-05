@@ -1,10 +1,13 @@
 import math
 from typing import Optional
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
 from schemas import EventInput, Recommendation, ScoreBreakdown, ServiceInput
 
 # ---------- Settings (tune these during testing) ----------
-WEIGHTS = {"budget": 0.40, "location": 0.30, "rating": 0.30}
+WEIGHTS = {"budget": 0.35, "location": 0.25, "rating": 0.25, "text": 0.15}
 
 # Typical share of the total event budget for each category
 CATEGORY_BUDGET_SHARE = {
@@ -24,6 +27,15 @@ MAX_DISTANCE_KM = 200           # location score reaches 0 at this distance
 UNKNOWN_LOCATION_SCORE = 0.30   # when a city is not in our table
 PRIOR_MEAN = 3.5                # Bayesian rating: assumed average
 PRIOR_WEIGHT = 3                # ...worth this many reviews
+GOOD_TEXT_MATCH = 0.7           # text score above this is called "a close match"
+
+# Extra words that describe each event type (helps match descriptions)
+EVENT_KEYWORDS = {
+    "wedding": "wedding bride groom reception ceremony marriage",
+    "birthday": "birthday party celebration kids cake",
+    "corporate": "corporate business conference company professional office",
+    "other": "event celebration",
+}
 
 # (latitude, longitude) of Sri Lankan cities
 CITY_COORDS = {
@@ -43,7 +55,7 @@ CITY_COORDS = {
 }
 
 
-# ---------- Helper functions ----------
+# ---------- Distance ----------
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r = 6371.0
     p1, p2 = math.radians(lat1), math.radians(lat2)
@@ -62,6 +74,7 @@ def distance_km(city_a: str, city_b: str) -> Optional[float]:
     return haversine_km(*CITY_COORDS[a], *CITY_COORDS[b])
 
 
+# ---------- Budget, location, rating ----------
 def allowed_budget(event: EventInput, category: str) -> float:
     if event.category_budget is not None:
         return event.category_budget
@@ -91,8 +104,46 @@ def rating_score(average: float, count: int) -> float:
     return bayesian / 5
 
 
+# ---------- Text similarity (TF-IDF + cosine) ----------
+def build_query(event: EventInput) -> str:
+    parts = [
+        event.event_type,
+        EVENT_KEYWORDS.get(event.event_type.lower(), ""),
+        event.category or "",
+        event.preferences or "",
+    ]
+    return " ".join(p for p in parts if p)
+
+
+def service_text(s: ServiceInput) -> str:
+    return f"{s.title} {s.category} {s.description or ''}"
+
+
+def text_scores(query: str, services: list[ServiceInput]) -> list[float]:
+    """Cosine similarity (0 to 1) between the query and each service text."""
+    if not services:
+        return []
+    docs = [service_text(s) for s in services]
+    try:
+        vectorizer = TfidfVectorizer(
+            stop_words="english", ngram_range=(1, 2), sublinear_tf=True
+        )
+        matrix = vectorizer.fit_transform(docs + [query])
+    except ValueError:
+        # Happens when there are no usable words at all
+        return [0.0] * len(services)
+    sims = cosine_similarity(matrix[-1], matrix[:-1]).ravel()
+    return [float(x) for x in sims]
+
+
+# ---------- Explanations ----------
 def build_reasons(
-    s: ServiceInput, allowed: float, effective_price: float, dist: Optional[float], event_city: str
+    s: ServiceInput,
+    allowed: float,
+    effective_price: float,
+    dist: Optional[float],
+    event: EventInput,
+    text: float,
 ) -> list[str]:
     reasons = []
 
@@ -112,7 +163,7 @@ def build_reasons(
         reasons.append("Price is negotiable")
 
     if dist is None:
-        reasons.append(f"Distance from {event_city} could not be calculated")
+        reasons.append(f"Distance from {event.city} could not be calculated")
     elif dist == 0:
         reasons.append(f"Located in {s.city}, same city as your event")
     else:
@@ -123,6 +174,9 @@ def build_reasons(
     else:
         reasons.append(f"Rated {s.average_rating:.1f}/5 from {s.review_count} reviews")
 
+    if text >= GOOD_TEXT_MATCH:
+        reasons.append(f"Description closely matches your {event.event_type} event")
+
     return reasons
 
 
@@ -130,12 +184,22 @@ def build_reasons(
 def recommend(
     event: EventInput, services: list[ServiceInput], top_n: int = 10
 ) -> list[Recommendation]:
+    candidates = [
+        s
+        for s in services
+        if not event.category or s.category.lower() == event.category.lower()
+    ]
+    if not candidates:
+        return []
+
+    # Text scores, scaled so the best match among the candidates is 1.0
+    raw_text = text_scores(build_query(event), candidates)
+    top = max(raw_text) if raw_text else 0.0
+    texts = [(x / top if top > 0 else 0.0) for x in raw_text]
+
     results: list[Recommendation] = []
 
-    for s in services:
-        if event.category and s.category.lower() != event.category.lower():
-            continue
-
+    for s, t in zip(candidates, texts):
         allowed = allowed_budget(event, s.category)
         effective_price = s.price * NEGOTIABLE_DISCOUNT if s.is_negotiable else s.price
 
@@ -144,18 +208,26 @@ def recommend(
         loc = location_score(dist)
         rat = rating_score(s.average_rating, s.review_count)
 
-        total = WEIGHTS["budget"] * b + WEIGHTS["location"] * loc + WEIGHTS["rating"] * rat
+        total = (
+            WEIGHTS["budget"] * b
+            + WEIGHTS["location"] * loc
+            + WEIGHTS["rating"] * rat
+            + WEIGHTS["text"] * t
+        )
 
         results.append(
             Recommendation(
                 service_id=s.service_id,
                 match_score=round(total * 100, 1),
                 breakdown=ScoreBreakdown(
-                    budget=round(b, 3), location=round(loc, 3), rating=round(rat, 3)
+                    budget=round(b, 3),
+                    location=round(loc, 3),
+                    rating=round(rat, 3),
+                    text=round(t, 3),
                 ),
                 within_budget=effective_price <= allowed,
                 distance_km=round(dist, 1) if dist is not None else None,
-                reasons=build_reasons(s, allowed, effective_price, dist, event.city),
+                reasons=build_reasons(s, allowed, effective_price, dist, event, t),
             )
         )
 
