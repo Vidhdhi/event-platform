@@ -42,3 +42,22 @@ export interface BookingSummary {
   service_id: string;
   event_id: string;
 }
+export interface BookingDetail {
+  booking_id: string;
+  status: "pending" | "accepted" | "rejected" | "completed" | "cancelled";
+  message: string | null;
+  booking_date: string;
+  agreed_price: number | null;
+  event_id: string;
+  event_title: string;
+  event_type: string;
+  event_date: string;
+  event_city: string;
+  guest_count: number;
+  planner_name: string;
+  service_id: string;
+  service_title: string;
+  category: string;
+  price: number;
+  business_name: string;
+}
