@@ -16,3 +16,15 @@ export function formatDate(value: string): string {
     year: "numeric",
   });
 }
+
+export function daysUntil(value: string): number {
+  const ms = new Date(value).getTime() - Date.now();
+  return Math.ceil(ms / 86_400_000);
+}
+
+export function dueLabel(days: number): string {
+  if (days < 0) return "Past";
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  return `In ${days} days`;
+}

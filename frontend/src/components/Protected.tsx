@@ -25,7 +25,11 @@ export default function Protected({
   }, [user, loading, role, router]);
 
   if (loading || !user || (role && user.role !== role)) {
-    return <p className="p-8 text-gray-500">Loading...</p>;
+    return (
+      <div className="grid min-h-[60vh] place-items-center">
+        <span className="spinner spinner-lg" aria-label="Loading" />
+      </div>
+    );
   }
   return <>{children}</>;
 }

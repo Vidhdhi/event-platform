@@ -121,7 +121,7 @@ function NewEventForm() {
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="error">{error}</p>}
 
           <div className="flex gap-3">
             <button type="submit" disabled={submitting} className={btnCls}>

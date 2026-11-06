@@ -117,14 +117,20 @@ function EventDetail() {
     return (
       <main className="mx-auto max-w-3xl px-4 py-8">
         <p className="text-red-600">{error}</p>
-        <Link href="/dashboard" className="text-indigo-600 underline">
+        <Link href="/dashboard" className="text-violet-600 underline">
           Back to dashboard
         </Link>
       </main>
     );
   }
   if (!event || !budget) {
-    return <p className="p-8 text-gray-500">Loading event...</p>;
+        return (
+      <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
+        <div className="skeleton h-28" />
+        <div className="skeleton h-40" />
+        <div className="skeleton h-32" />
+      </main>
+    );
   }
 
   const pct =
@@ -134,7 +140,7 @@ function EventDetail() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <Link href="/dashboard" className="text-sm text-indigo-600 underline">
+      <Link href="/dashboard" className="text-sm text-violet-600 underline">
         ← Back to my events
       </Link>
 
@@ -152,46 +158,45 @@ function EventDetail() {
             Delete
           </button>
         </div>
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm muted">
           Vendor recommendations will appear here on Day 10.
         </p>
       </div>
 
       {/* Budget summary */}
+            {/* Budget summary */}
       <div className={cardCls}>
-        <h2 className="mb-3 text-lg font-semibold">Budget</h2>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-xs text-gray-500">Total</p>
-            <p className="font-semibold">{money(budget.totalBudget)}</p>
+        <h2 className="mb-4 text-lg font-semibold">Budget</h2>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="stat">
+            <p className="stat-label">Total</p>
+            <p className="stat-value">{money(budget.totalBudget)}</p>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">Spent / confirmed</p>
-            <p className="font-semibold">{money(budget.allocated)}</p>
+          <div className="stat">
+            <p className="stat-label">Confirmed</p>
+            <p className="stat-value">{money(budget.allocated)}</p>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">Remaining</p>
-            <p
-              className={`font-semibold ${
-                budget.overBudget ? "text-red-600" : "text-green-700"
-              }`}
-            >
-              {money(budget.remainingBalance)}
-            </p>
+          <div className={`stat ${budget.overBudget ? "stat-bad" : "stat-good"}`}>
+            <p className="stat-label">Remaining</p>
+            <p className="stat-value">{money(budget.remainingBalance)}</p>
           </div>
         </div>
 
-        <div className="mt-4 h-3 w-full overflow-hidden rounded bg-gray-200">
+        <div className="progress mt-5">
           <div
-            className={`h-full ${budget.overBudget ? "bg-red-500" : "bg-indigo-500"}`}
+            className={`progress-bar ${budget.overBudget ? "progress-bad" : ""}`}
             style={{ width: `${pct}%` }}
           />
         </div>
+        <p className="muted mt-2 text-xs">{Math.round(pct)}% of your budget is used</p>
+
         {budget.overBudget && (
-          <p className="mt-2 text-sm text-red-600">You are over budget.</p>
+          <p className="error mt-3" role="alert">
+            You are over budget by {money(Math.abs(budget.remainingBalance))}.
+          </p>
         )}
         {budget.pendingTotal > 0 && (
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="muted mt-2 text-sm">
             Pending requests worth {money(budget.pendingTotal)} are not counted yet.
           </p>
         )}
@@ -201,13 +206,13 @@ function EventDetail() {
       <div className={cardCls}>
         <h2 className="mb-3 text-lg font-semibold">Confirmed vendors</h2>
         {budget.confirmedBookings.length === 0 ? (
-          <p className="text-sm text-gray-500">No confirmed bookings yet.</p>
+          <p className="text-sm muted">No confirmed bookings yet.</p>
         ) : (
           <ul className="divide-y text-sm">
             {budget.confirmedBookings.map((b) => (
               <li key={b.booking_id} className="flex justify-between py-2">
                 <span>
-                  {b.title} <span className="text-gray-500">({b.category})</span>
+                  {b.title} <span className="muted">({b.category})</span>
                 </span>
                 <span className="font-medium">{money(b.amount)}</span>
               </li>
@@ -221,14 +226,14 @@ function EventDetail() {
         <h2 className="mb-3 text-lg font-semibold">Other expenses</h2>
 
         {budget.manualItems.length === 0 ? (
-          <p className="mb-4 text-sm text-gray-500">No other expenses added.</p>
+          <p className="mb-4 text-sm muted">No other expenses added.</p>
         ) : (
           <ul className="mb-4 divide-y text-sm">
             {budget.manualItems.map((i) => (
               <li key={i.item_id} className="flex items-center justify-between py-2">
                 <span>
                   {i.category}
-                  {i.note && <span className="text-gray-500"> · {i.note}</span>}
+                  {i.note && <span className="muted"> · {i.note}</span>}
                 </span>
                 <span className="flex items-center gap-3">
                   <span className="font-medium">{money(i.amount)}</span>

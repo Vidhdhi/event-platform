@@ -9,32 +9,48 @@ export default function Navbar() {
   const router = useRouter();
 
   return (
-    <header className="border-b bg-white">
-      <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="text-lg font-bold text-indigo-600">
-          EventPlanner
+    <header className="navbar">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-teal-400 text-sm font-bold text-white">
+            E
+          </span>
+          <span className="font-display text-lg font-bold">EventPlanner</span>
         </Link>
-        <div className="flex items-center gap-4 text-sm">
+
+        <div className="flex items-center gap-3 text-sm">
           {user ? (
             <>
-              <Link href={user.role === "vendor" ? "/vendor" : "/dashboard"}>
+              <Link
+                href={user.role === "vendor" ? "/vendor" : "/dashboard"}
+                className="font-semibold hover:text-violet-700"
+              >
                 Dashboard
               </Link>
-              <span className="text-gray-500">{user.name}</span>
+              <span
+                title={user.name}
+                className="grid h-8 w-8 place-items-center rounded-full bg-violet-100 text-sm font-bold text-violet-700"
+              >
+                {user.name.charAt(0).toUpperCase()}
+              </span>
               <button
                 onClick={() => {
                   logout();
                   router.push("/login");
                 }}
-                className="rounded border px-3 py-1 hover:bg-gray-100"
+                className="btn btn-ghost !px-3 !py-1.5"
               >
-                Logout
+                Log out
               </button>
             </>
           ) : (
             <>
-              <Link href="/login">Login</Link>
-              <Link href="/register">Register</Link>
+              <Link href="/login" className="font-semibold hover:text-violet-700">
+                Log in
+              </Link>
+              <Link href="/register" className="btn !px-4 !py-1.5">
+                Sign up
+              </Link>
             </>
           )}
         </div>

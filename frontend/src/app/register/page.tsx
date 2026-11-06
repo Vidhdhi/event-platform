@@ -4,7 +4,8 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { btnCls, cardCls, inputCls, labelCls } from "@/lib/ui";
+import AuthShell from "@/components/AuthShell";
+import PasswordField from "@/components/PasswordField";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -33,103 +34,106 @@ export default function RegisterPage() {
       router.push(user.role === "vendor" ? "/vendor" : "/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <main className="mx-auto mt-12 max-w-md px-4">
-      <div className={cardCls}>
-        <h1 className="mb-4 text-2xl font-bold">Create an account</h1>
-
-        <div className="mb-4 grid grid-cols-2 gap-2">
-          {(["user", "vendor"] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setRole(r)}
-              className={`rounded border px-3 py-2 text-sm ${
-                role === r
-                  ? "border-indigo-600 bg-indigo-50 font-medium text-indigo-700"
-                  : "border-gray-300"
-              }`}
-            >
-              {r === "user" ? "I am planning an event" : "I am a vendor"}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className={labelCls}>Full name</label>
-            <input
-              required
-              minLength={2}
-              className={inputCls}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className={labelCls}>Email</label>
-            <input
-              type="email"
-              required
-              className={inputCls}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className={labelCls}>Password (at least 8 characters)</label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              className={inputCls}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          {role === "vendor" && (
-            <>
-              <div>
-                <label className={labelCls}>Business name</label>
-                <input
-                  required
-                  minLength={2}
-                  className={inputCls}
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>City</label>
-                <input
-                  required
-                  minLength={2}
-                  className={inputCls}
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
-              </div>
-            </>
-          )}
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={submitting} className={btnCls + " w-full"}>
-            {submitting ? "Creating account..." : "Register"}
-          </button>
-        </form>
-        <p className="mt-4 text-sm text-gray-600">
-          Already registered?{" "}
-          <Link href="/login" className="text-indigo-600 underline">
-            Log in
-          </Link>
-        </p>
+    <AuthShell
+      title="Create your account"
+      subtitle="It takes less than a minute."
+    >
+      <div className="seg mb-5">
+        <button
+          type="button"
+          className="seg-btn"
+          aria-pressed={role === "user"}
+          onClick={() => setRole("user")}
+        >
+          I am planning an event
+        </button>
+        <button
+          type="button"
+          className="seg-btn"
+          aria-pressed={role === "vendor"}
+          onClick={() => setRole("vendor")}
+        >
+          I am a vendor
+        </button>
       </div>
-    </main>
+
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div>
+          <label className="label">Full name</label>
+          <input
+            required
+            minLength={2}
+            autoComplete="name"
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label">Email</label>
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            className="input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <PasswordField
+          label="Password (at least 8 characters)"
+          minLength={8}
+          value={password}
+          onChange={setPassword}
+        />
+
+        {role === "vendor" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">Business name</label>
+              <input
+                required
+                minLength={2}
+                className="input"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">City</label>
+              <input
+                required
+                minLength={2}
+                className="input"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+
+        <button type="submit" disabled={submitting} className="btn w-full">
+          {submitting && <span className="spinner" />}
+          {submitting ? "Creating account..." : "Create account"}
+        </button>
+      </form>
+      <p className="muted mt-5 text-sm">
+        Already registered?{" "}
+        <Link href="/login" className="link">
+          Log in
+        </Link>
+      </p>
+    </AuthShell>
   );
 }
