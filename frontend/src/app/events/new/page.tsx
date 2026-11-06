@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Protected from "@/components/Protected";
 import { api } from "@/lib/api";
 import { btnCls, btnGhostCls, cardCls, inputCls, labelCls } from "@/lib/ui";
-
+import { CITIES } from "@/lib/constants";
 function NewEventForm() {
   const router = useRouter();
   const [title, setTitle] = useState("");
@@ -87,7 +87,8 @@ function NewEventForm() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>City</label>
-              <input
+           <input
+                list="cities"
                 required
                 minLength={2}
                 className={inputCls}
@@ -96,6 +97,11 @@ function NewEventForm() {
                 placeholder="e.g. Colombo"
               />
             </div>
+                        <datalist id="cities">
+              {CITIES.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
             <div>
               <label className={labelCls}>Guests</label>
               <input

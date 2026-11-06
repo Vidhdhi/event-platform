@@ -21,6 +21,11 @@ export default function Navbar() {
         <div className="flex items-center gap-3 text-sm">
           {user ? (
             <>
+                          {user.role === "user" && (
+                <Link href="/browse" className="font-semibold hover:text-violet-700">
+                  Find vendors
+                </Link>
+              )}
               <Link
                 href={user.role === "vendor" ? "/vendor" : "/dashboard"}
                 className="font-semibold hover:text-violet-700"

@@ -7,7 +7,7 @@ import Protected from "@/components/Protected";
 import { api } from "@/lib/api";
 import { formatDate, money } from "@/lib/format";
 import { btnCls, btnGhostCls, cardCls, inputCls, labelCls } from "@/lib/ui";
-
+import RecommendationsPanel from "@/components/RecommendationsPanel";
 interface EventItem {
   event_id: string;
   title: string;
@@ -158,11 +158,9 @@ function EventDetail() {
             Delete
           </button>
         </div>
-        <p className="mt-4 text-sm muted">
-          Vendor recommendations will appear here on Day 10.
-        </p>
+      
       </div>
-
+      <RecommendationsPanel eventId={event.event_id} onBooked={load} />
       {/* Budget summary */}
             {/* Budget summary */}
       <div className={cardCls}>
