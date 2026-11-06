@@ -1,0 +1,63 @@
+{
+  "event": {
+    "event_type": "wedding",
+    "city": "Colombo",
+    "total_budget": 1500000,
+    "guest_count": 150,
+    "category": "Photography",
+    "preferences": "cinematic films"
+  },
+  "services": [
+    {
+      "service_id": "A",
+      "title": "Colombo Wedding Studio",
+      "description": "Studio portraits and formal wedding albums",
+      "category": "Photography",
+      "price": 150000,
+      "city": "Colombo",
+      "average_rating": 4.8,
+      "review_count": 20
+    },
+    {
+      "service_id": "B",
+      "title": "Negombo Photo House",
+      "description": "Candid outdoor wedding photography with natural light",
+      "category": "Photography",
+      "price": 120000,
+      "city": "Negombo",
+      "average_rating": 4.2,
+      "review_count": 5
+    },
+    {
+      "service_id": "C",
+      "title": "Jaffna Lens",
+      "description": "Landscape and event photography",
+      "category": "Photography",
+      "price": 100000,
+      "city": "Jaffna",
+      "average_rating": 5.0,
+      "review_count": 10
+    },
+    {
+      "service_id": "D",
+      "title": "Premium Colombo Photography",
+      "description": "Luxury wedding photography and cinematic films",
+      "category": "Photography",
+      "price": 300000,
+      "city": "Colombo",
+      "average_rating": 4.9,
+      "review_count": 30
+    },
+    {
+      "service_id": "E",
+      "title": "Catering Co",
+      "description": "Buffet catering for weddings",
+      "category": "Catering",
+      "price": 400000,
+      "city": "Colombo",
+      "average_rating": 4.5,
+      "review_count": 12
+    }
+  ],
+  "top_n": 10
+}
