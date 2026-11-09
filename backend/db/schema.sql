@@ -1,6 +1,6 @@
 -- Re-runnable in development: wipes and rebuilds everything
 DROP VIEW  IF EXISTS service_ratings;
-DROP TABLE IF EXISTS budget_items, reviews, bookings, events, services, vendors, users CASCADE;
+DROP TABLE IF EXISTS notifications, budget_items, reviews, bookings, events, services, vendors, users CASCADE;
 DROP TYPE  IF EXISTS user_role, booking_status;
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -98,4 +98,15 @@ CREATE INDEX idx_services_city     ON services(city);
 CREATE INDEX idx_services_price    ON services(price);
 CREATE INDEX idx_events_user       ON events(user_id);
 CREATE INDEX idx_bookings_event    ON bookings(event_id);
-CREATE INDEX idx_reviews_service   ON reviews(service_id);
+CREATE INDEX idx_reviews_service   ON reviews(service_id);CREATE TABLE IF NOT EXISTS notifications (
+  notification_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  type       VARCHAR(50) NOT NULL,
+  message    TEXT NOT NULL,
+  link       VARCHAR(255),
+  is_read    BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user
+  ON notifications(user_id, is_read, created_at DESC);

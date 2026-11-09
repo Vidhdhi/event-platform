@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { formatDate, money } from "@/lib/format";
 import type { EventSummary, Service } from "@/lib/types";
-
+import { createPortal } from "react-dom";
 interface Props {
   service: Service;
   eventId?: string; // fixed event (used on the event page)
@@ -14,7 +14,7 @@ interface Props {
   onBooked?: () => void;
 }
 
-export default function BookDialog({
+function BookDialogInner ({
   service,
   eventId,
   events = [],
@@ -162,4 +162,8 @@ export default function BookDialog({
       </div>
     </div>
   );
+}
+
+export default function BookDialog(props: Props) {
+  return createPortal(<BookDialogInner {...props} />, document.body);
 }

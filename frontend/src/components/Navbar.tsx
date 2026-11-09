@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-
+import NotificationBell from "./NotificationBell";
 export default function Navbar() {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -32,6 +32,7 @@ export default function Navbar() {
               >
                 Dashboard
               </Link>
+              <NotificationBell />
               <span
                 title={user.name}
                 className="grid h-8 w-8 place-items-center rounded-full bg-violet-100 text-sm font-bold text-violet-700"

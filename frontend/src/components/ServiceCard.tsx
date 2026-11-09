@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { CATEGORY_ICONS } from "@/lib/constants";
 import { money } from "@/lib/format";
 import type { Recommendation, Service } from "@/lib/types";
-
+import ReviewsButton from "./ReviewsButton";
 const PARTS = [
   { key: "budget", label: "Budget" },
   { key: "location", label: "Location" },
@@ -57,11 +57,12 @@ export default function ServiceCard({
         {service.is_negotiable && (
           <span className="chip chip-birthday">Negotiable</span>
         )}
-        <span className="muted">
-          {service.review_count > 0
-            ? `★ ${service.average_rating.toFixed(1)} (${service.review_count})`
-            : "No reviews yet"}
-        </span>
+               <ReviewsButton
+          serviceId={service.service_id}
+          title={service.title}
+          average={service.average_rating}
+          count={service.review_count}
+        />
       </div>
 
       {rec && (

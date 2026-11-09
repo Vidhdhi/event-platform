@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { money } from "@/lib/format";
-import type { BookingDetail } from "@/lib/types";
+import type { BookingDetail, MyReview } from "@/lib/types";
 import StatusChip from "./StatusChip";
+import ReviewDialog from "./ReviewDialog";
+import { Stars } from "./Stars";
 
 export default function EventBookings({
   eventId,
@@ -16,12 +18,19 @@ export default function EventBookings({
   onChanged: () => void;
 }) {
   const [items, setItems] = useState<BookingDetail[] | null>(null);
+  const [myReviews, setMyReviews] = useState<Record<string, MyReview>>({});
+  const [reviewing, setReviewing] = useState<BookingDetail | null>(null);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState("");
 
   const load = useCallback(async () => {
     try {
-      setItems(await api<BookingDetail[]>(`/bookings?eventId=${eventId}`));
+      const [bookings, reviews] = await Promise.all([
+        api<BookingDetail[]>(`/bookings?eventId=${eventId}`),
+        api<MyReview[]>("/reviews/mine").catch(() => [] as MyReview[]),
+      ]);
+      setItems(bookings);
+      setMyReviews(Object.fromEntries(reviews.map((r) => [r.service_id, r])));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load requests");
     }
@@ -68,29 +77,74 @@ export default function EventBookings({
       )}
 
       <ul className="divide-y">
-        {items?.map((b) => (
-          <li key={b.booking_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-            <div className="min-w-0">
-              <p className="font-semibold">{b.service_title}</p>
-              <p className="muted text-sm">
-                {b.business_name}, {b.agreed_price !== null ? `agreed ${money(b.agreed_price)}` : money(b.price)}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <StatusChip status={b.status} />
-              {(b.status === "pending" || b.status === "accepted") && (
-                <button
-                  className="text-sm font-semibold text-red-600 underline"
-                  disabled={busyId === b.booking_id}
-                  onClick={() => cancel(b)}
-                >
-                  {busyId === b.booking_id ? "Cancelling..." : "Cancel"}
-                </button>
-              )}
-            </div>
-          </li>
-        ))}
+        {items?.map((b) => {
+          const review = myReviews[b.service_id];
+          return (
+            <li
+              key={b.booking_id}
+              className="flex flex-wrap items-center justify-between gap-3 py-3"
+            >
+              <div className="min-w-0">
+                <p className="font-semibold">{b.service_title}</p>
+                <p className="muted text-sm">
+                  {b.business_name},{" "}
+                  {b.agreed_price !== null
+                    ? `agreed ${money(b.agreed_price)}`
+                    : money(b.price)}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <StatusChip status={b.status} />
+
+                {(b.status === "pending" || b.status === "accepted") && (
+                  <button
+                    className="text-sm font-semibold text-red-600 underline"
+                    disabled={busyId === b.booking_id}
+                    onClick={() => cancel(b)}
+                  >
+                    {busyId === b.booking_id ? "Cancelling..." : "Cancel"}
+                  </button>
+                )}
+
+                {b.status === "completed" &&
+                  (review ? (
+                    <span className="flex items-center gap-2 text-sm">
+                      <Stars value={review.rating} />
+                      <button
+                        className="link"
+                        onClick={() => setReviewing(b)}
+                      >
+                        Edit review
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      className="btn !px-3 !py-1.5"
+                      onClick={() => setReviewing(b)}
+                    >
+                      Leave a review
+                    </button>
+                  ))}
+              </div>
+            </li>
+          );
+        })}
       </ul>
+
+      {reviewing && (
+        <ReviewDialog
+          serviceId={reviewing.service_id}
+          serviceTitle={reviewing.service_title}
+          businessName={reviewing.business_name}
+          existing={myReviews[reviewing.service_id]}
+          onClose={() => setReviewing(null)}
+          onSaved={() => {
+            setReviewing(null);
+            load();
+          }}
+        />
+      )}
     </section>
   );
 }

@@ -61,3 +61,26 @@ export interface BookingDetail {
   price: number;
   business_name: string;
 }
+
+export interface Review {
+  review_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer_name: string;
+}
+
+export interface MyReview {
+  service_id: string;
+  rating: number;
+  comment: string | null;
+}
+
+export interface NotificationItem {
+  notification_id: string;
+  type: string;
+  message: string;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
+}
