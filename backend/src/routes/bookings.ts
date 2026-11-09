@@ -72,12 +72,26 @@ router.post("/", async (req, res) => {
       return;
     }
 
+     // A declined or cancelled request can be sent again. A pending, accepted or
+    // completed one cannot, so no row comes back and we answer 409.
     const result = await pool.query(
       `INSERT INTO bookings (event_id, service_id, message)
        VALUES ($1, $2, $3)
+       ON CONFLICT (event_id, service_id) DO UPDATE
+         SET status = 'pending',
+             message = EXCLUDED.message,
+             agreed_price = NULL,
+             booking_date = NOW()
+         WHERE bookings.status IN ('rejected', 'cancelled')
        RETURNING booking_id, event_id, service_id, status, message, booking_date`,
       [eventId, serviceId, message ?? null]
     );
+    if (result.rows.length === 0) {
+      res
+        .status(409)
+        .json({ message: "You already requested this service for this event" });
+      return;
+    }
         await notify(
       service.rows[0].vendor_user_id,
       "booking_request",
