@@ -85,3 +85,4 @@ def test_500_services_are_ranked_in_under_2_seconds():
     assert r.status_code == 200
     assert elapsed < 2.0
     print(f"500 services ranked in {elapsed * 1000:.0f} ms")
+    

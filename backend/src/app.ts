@@ -19,8 +19,17 @@ if (!process.env.JWT_SECRET) {
 
 export const app = express();
 
+// Needed behind Render's proxy so the rate limiter sees the visitor's real IP
+app.set("trust proxy", 1);
+
 app.use(helmet());
-app.use(cors());
+
+// In production only the frontend's address may call the API
+const allowedOrigins = (process.env.CORS_ORIGIN ?? "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : true }));
 app.use(express.json({ limit: "100kb" }));
 
 // Slows down password guessing (switched off while running tests)

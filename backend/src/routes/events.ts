@@ -272,11 +272,14 @@ interface AiResponse {
 // Calls the Python AI microservice
 async function callAiService(payload: unknown): Promise<AiResponse> {
   const baseUrl = process.env.AI_SERVICE_URL || "http://localhost:8000";
-  const response = await fetch(`${baseUrl}/recommend`, {
+   const response = await fetch(`${baseUrl}/recommend`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(process.env.AI_API_KEY ? { "X-API-Key": process.env.AI_API_KEY } : {}),
+    },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(5000),
+    signal: AbortSignal.timeout(Number(process.env.AI_TIMEOUT_MS) || 5000),
   });
   if (!response.ok) {
     throw new Error(`AI service returned ${response.status}`);
