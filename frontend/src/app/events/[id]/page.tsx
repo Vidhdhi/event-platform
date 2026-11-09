@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { formatDate, money } from "@/lib/format";
 import { btnCls, btnGhostCls, cardCls, inputCls, labelCls } from "@/lib/ui";
 import RecommendationsPanel from "@/components/RecommendationsPanel";
+import EventBookings from "@/components/EventBookings";
 interface EventItem {
   event_id: string;
   title: string;
@@ -56,7 +57,7 @@ function EventDetail() {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [adding, setAdding] = useState(false);
-
+  const [bookingsKey, setBookingsKey] = useState(0);
   const load = useCallback(async () => {
     try {
       const [e, b] = await Promise.all([
@@ -160,7 +161,19 @@ function EventDetail() {
         </div>
       
       </div>
-      <RecommendationsPanel eventId={event.event_id} onBooked={load} />
+          <RecommendationsPanel
+        eventId={event.event_id}
+        onBooked={() => {
+          load();
+          setBookingsKey((k) => k + 1);
+        }}
+      />
+
+      <EventBookings
+        eventId={event.event_id}
+        refreshKey={bookingsKey}
+        onChanged={load}
+      />
       {/* Budget summary */}
             {/* Budget summary */}
       <div className={cardCls}>
