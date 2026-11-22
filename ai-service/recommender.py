@@ -198,6 +198,7 @@ def recommend(
     texts = [(x / top if top > 0 else 0.0) for x in raw_text]
 
     results: list[Recommendation] = []
+    totals: list[float] = []
 
     for s, t in zip(candidates, texts):
         allowed = allowed_budget(event, s.category)
@@ -229,7 +230,10 @@ def recommend(
                 distance_km=round(dist, 1) if dist is not None else None,
                 reasons=build_reasons(s, allowed, effective_price, dist, event, t),
             )
-        )
+        )        
+        totals.append(total)
 
-    results.sort(key=lambda r: r.match_score, reverse=True)
-    return results[:top_n]
+    # Sort on the unrounded score. Ties are broken by service_id, so the same
+    # candidates always give the same ranking, whatever order the database returned.
+    order = sorted(range(len(results)), key=lambda i: (-totals[i], results[i].service_id))
+    return [results[i] for i in order][:top_n]

@@ -133,3 +133,10 @@ def test_preferences_change_the_ranking():
     )
     result = recommend(event, [plain, drone])
     assert result[0].service_id == "drone"
+
+def test_ranking_does_not_depend_on_input_order():
+    a = make_service(service_id="a")
+    b = make_service(service_id="b")
+    first = [r.service_id for r in recommend(EVENT, [a, b])]
+    second = [r.service_id for r in recommend(EVENT, [b, a])]
+    assert first == second

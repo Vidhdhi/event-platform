@@ -86,3 +86,10 @@ def test_500_services_are_ranked_in_under_2_seconds():
     assert elapsed < 2.0
     print(f"500 services ranked in {elapsed * 1000:.0f} ms")
     
+
+def test_api_key_is_required_when_configured(monkeypatch):
+    monkeypatch.setenv("AI_API_KEY", "secret")
+    payload = {"event": EVENT, "services": [service(1)]}
+    assert client.post("/recommend", json=payload).status_code == 401
+    ok = client.post("/recommend", json=payload, headers={"X-API-Key": "secret"})
+    assert ok.status_code == 200
